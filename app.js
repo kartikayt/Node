@@ -1,14 +1,25 @@
 const fs = require('fs');
 const express = require('express');
+const morgan = require('morgan');
 const app = express();
 
 app.use(express.json());
+app.use(morgan('dev'));
+// app.use((req, res, next) => {
+//   console.log('hello from middleware');
+//   next();
+// });
+
+app.use((req, res, next) => {
+  req.requestedAt = new Date().toISOString();
+  next();
+});
 
 const tours = JSON.parse(
   fs.readFileSync(`${__dirname}/dev-data/data/tours-simple.json`)
 );
 
-app.get('/api/v1/tours', (req, res) => {
+const getAllTours = (req, res) => {
   res.status(200).json({
     status: 'success',
     results: tours.length,
@@ -16,9 +27,9 @@ app.get('/api/v1/tours', (req, res) => {
       tours,
     },
   });
-});
+};
 
-app.post('/api/v1/tours', (req, res) => {
+const addNewTour = (req, res) => {
   // console.log(req.body);
   const newId = tours[tours.length - 1].id + 1;
   const newTour = Object.assign({ id: newId }, req.body);
@@ -36,12 +47,12 @@ app.post('/api/v1/tours', (req, res) => {
       });
     }
   );
-});
+};
 
-app.get('/api/v1/tours/:id', (req, res) => {
+const getATour = (req, res) => {
   // console.log(req.params);
   const id = req.params.id * 1;
-
+  console.log(req.requestedAt);
   if (id > tours.length) {
     return res.status(404).json({
       status: 'fail',
@@ -52,13 +63,14 @@ app.get('/api/v1/tours/:id', (req, res) => {
   const tour = tours.find((el) => el.id === id);
   res.status(200).json({
     status: 'success',
+    requestedAt: req.requestedAt,
     data: {
       tour: tour,
     },
   });
-});
+};
 
-app.patch('/api/v1/tours/:id', (req, res) => {
+const updateTour = (req, res) => {
   // console.log(req.params);
   const id = req.params.id * 1;
 
@@ -76,9 +88,9 @@ app.patch('/api/v1/tours/:id', (req, res) => {
       tour: 'Updated tour',
     },
   });
-});
+};
 
-app.delete('/api/v1/tours/:id', (req, res) => {
+const deleteTour = (req, res) => {
   // console.log(req.params);
   const id = req.params.id * 1;
 
@@ -94,7 +106,26 @@ app.delete('/api/v1/tours/:id', (req, res) => {
     status: 'success',
     data: null,
   });
+};
+
+// app.get('/api/v1/tours', getAllTours);
+// app.post('/api/v1/tours', addNewTour);
+// app.get('/api/v1/tours/:id', getATour);
+// app.patch('/api/v1/tours/:id', updateTour);
+// app.delete('/api/v1/tours/:id', deleteTour);
+
+app.route('/api/v1/tours').get(getAllTours).post(addNewTour);
+
+app.use((req, res, next) => {
+  console.log('hello from middleware after 1st route');
+  next();
 });
+
+app
+  .route('/api/v1/tours/:id')
+  .get(getATour)
+  .patch(updateTour)
+  .delete(deleteTour);
 
 const port = 3000;
 app.listen(port, () => {
