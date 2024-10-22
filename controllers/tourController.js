@@ -4,6 +4,30 @@ const tours = JSON.parse(
   fs.readFileSync(`${__dirname}/../dev-data/data/tours-simple.json`)
 );
 
+exports.checkId = (req, res, next, val) => {
+  const id = val;
+  if (id > tours.length) {
+    return res.status(404).json({
+      status: 'fail',
+      message: 'Id does not exist',
+    });
+  }
+  next();
+};
+
+exports.checkBody = (req, res, next) => {
+  const name = req.body.name;
+  const price = req.body.price;
+
+  if (!name || !price) {
+    return res.status(404).json({
+      status: 'fail',
+      message: 'Must contain name and price',
+    });
+  }
+  next();
+};
+
 exports.getAllTours = (req, res) => {
   res.status(200).json({
     status: 'success',
@@ -20,7 +44,7 @@ exports.addNewTour = (req, res) => {
 
   tours.push(newTour);
   fs.writeFile(
-    `${__dirname}/dev-data/data/tours-simple.json`,
+    `${__dirname}/../dev-data/data/tours-simple.json`,
     JSON.stringify(tours),
     (err) => {
       res.status(201).json({
@@ -36,12 +60,6 @@ exports.addNewTour = (req, res) => {
 exports.getATour = (req, res) => {
   const id = req.params.id * 1;
   console.log(req.requestedAt);
-  if (id > tours.length) {
-    return res.status(404).json({
-      status: 'fail',
-      message: 'Id does not exist',
-    });
-  }
 
   const tour = tours.find((el) => el.id === id);
   res.status(200).json({
@@ -56,13 +74,6 @@ exports.getATour = (req, res) => {
 exports.updateTour = (req, res) => {
   const id = req.params.id * 1;
 
-  if (id > tours.length) {
-    return res.status(404).json({
-      status: 'fail',
-      message: 'Id does not exist',
-    });
-  }
-
   const tour = tours.find((el) => el.id === id);
   res.status(200).json({
     status: 'success',
@@ -74,13 +85,6 @@ exports.updateTour = (req, res) => {
 
 exports.deleteTour = (req, res) => {
   const id = req.params.id * 1;
-
-  if (id > tours.length) {
-    return res.status(404).json({
-      status: 'fail',
-      message: 'Id does not exist',
-    });
-  }
 
   const tour = tours.find((el) => el.id === id);
   res.status(204).json({
